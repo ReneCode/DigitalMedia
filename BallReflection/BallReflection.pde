@@ -13,9 +13,9 @@ int MAX_WALL = 10;
 int currentWallIndex = 0;
 
 Ball[] aBall;
-int MAX_BALL = 100;
-int MAX_BALL_AGE = 250;
-float MAX_BALL_SIZE = 50;
+int MAX_BALL = 300;
+int MAX_BALL_AGE = 150;
+float MAX_BALL_SIZE = 30;
 
 
 

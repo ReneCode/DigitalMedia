@@ -3,6 +3,8 @@
 //
 
 
+Maxim maxim;
+
 Wall[] aWall;
 int MAX_WALL = 10;
 int currentWallIndex = 0;
@@ -75,7 +77,10 @@ class Ball {
     sizeMax = random(10,MAX_BALL_SIZE);
     sizeVel = sizeMax / (age/2);
     
-    BallColor = color(0,0,0);
+    int r = (int)map(mouseX, 0, width, 0, 255);
+    int g = (int)map(mouseY, 0, height, 0, 255);
+    int b = (int)random(0,255);
+    BallColor = color( r,g,b, random(0,255) );
   }
 
   boolean update() {
@@ -201,36 +206,12 @@ void  draw()
   for (int i=0; i<MAX_BALL; i++) {
     if (aBall[i].update() == false) {
       aBall[i] = new Ball(mouseX, mouseY);
-//      colorMode(HSB);
-      int r = (int)map(mouseX, 0, width, 0, 255);
-      int g = (int)map(mouseY, 0, height, 0, 255);
-      int b = (int)random(0,255);
-      aBall[i].BallColor = color( r,g,b, random(0,255) );
     }
     for (int w=0; w<MAX_WALL; w++) {
       aBall[i].reflect(aWall[w]);
-//      PVector collision = aBall[i].collide(aWall[w]);
-/*      
-      if (collision != null) {
-        ellipse(collision.x, collision.y, 30, 30);
-        reflection
-        aBall[i].vel = reflection(aBall[i].vel, collision, 
-        new PVector(-aBall[i].vel.y,-aBall[i].vel.x,0);
-        */
-      
     }
   }
-  
-  
-/*
-  PVector intersection = intersection(aWall[0].p1, aWall[0].p2, 
-                                     aWall[1].p1, aWall[1].p2);
-                                    
-  if (intersection != null) {
-     ellipse(intersection.x, intersection.y, 40, 40);
-  }    
-*/
-  
+ 
   for (int i=0; i<MAX_WALL; i++) {
     aWall[i].draw();
   }
@@ -238,31 +219,6 @@ void  draw()
   for (int i=0; i<MAX_BALL; i++) {
     aBall[i].draw();
   }
-  
 }
 
 
-void mousePressed()
-{
-  currentWallIndex++;
-  if (currentWallIndex >= MAX_WALL) {
-    currentWallIndex = 0;
-  }
-  
-  // rubber band
-  aWall[currentWallIndex] = new Wall(mouseX, mouseY, mouseX, mouseY);
-  
-}
-
-void mouseReleased()
-{
-  aWall[currentWallIndex].setStrokeWeight(4);
-}
-
-void mouseDragged()
-{
-  if (mousePressed) {
-    aWall[currentWallIndex].setP2(mouseX, mouseY);
-  }
-
-}

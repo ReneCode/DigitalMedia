@@ -1,5 +1,10 @@
+// Assignment for Coursera / DigitalMedia
+//
+//
+
+
 Wall[] aWall;
-int MAX_WALL = 1;
+int MAX_WALL = 10;
 int currentWallIndex = 0;
 
 Ball[] aBall;

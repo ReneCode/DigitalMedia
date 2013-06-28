@@ -4,6 +4,9 @@
 
 
 Maxim maxim;
+AudioPlayer[] player;
+int MAX_AUDIOPLAYER = 11;
+int player_count = 0;
 
 Wall[] aWall;
 int MAX_WALL = 10;
@@ -68,7 +71,6 @@ class Ball {
   float sizeMax;
   color BallColor;
   
-  
   Ball(float x, float y) {
     pos = new PVector(x, y, 0);
     vel = new PVector(random(-1,1), random(-1,1));
@@ -81,6 +83,7 @@ class Ball {
     int g = (int)map(mouseY, 0, height, 0, 255);
     int b = (int)random(0,255);
     BallColor = color( r,g,b, random(0,255) );
+    
   }
 
   boolean update() {
@@ -183,7 +186,12 @@ void setup()
 {
   // default size
   size(600,600);
- 
+  maxim = new Maxim(this);
+  player = new AudioPlayer[MAX_AUDIOPLAYER];
+  for (int i=0; i<MAX_AUDIOPLAYER; i++) {
+    player[i] = maxim.loadFile("bubble" + i + ".wav");
+    player[i].setLooping(false);
+  }
  
   aBall = new Ball[MAX_BALL];
   for (int i=0; i<MAX_BALL; i++) {
@@ -203,14 +211,28 @@ void  draw()
   background(0);
   
   // update balls
+  int idxBall = -1;
   for (int i=0; i<MAX_BALL; i++) {
     if (aBall[i].update() == false) {
+      idxBall = i;
+
       aBall[i] = new Ball(mouseX, mouseY);
     }
     for (int w=0; w<MAX_WALL; w++) {
       aBall[i].reflect(aWall[w]);
     }
   }
+
+  if (idxBall >= 0) {
+    player_count++;
+    if (player_count == 5) {
+      player_count = 0;
+      int idxPlayer = (int)map(aBall[idxBall].sizeMax, 0, MAX_BALL_SIZE, 0, MAX_AUDIOPLAYER);
+      player[idxPlayer].cue(0);
+      player[idxPlayer].play();
+    }
+  }
+
  
   for (int i=0; i<MAX_WALL; i++) {
     aWall[i].draw();

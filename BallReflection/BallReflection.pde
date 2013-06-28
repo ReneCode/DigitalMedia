@@ -1,65 +1,17 @@
+//
 // Assignment for Coursera / DigitalMedia
+// 6/2013
 //
-//
-
 
 Maxim maxim;
 AudioPlayer[] player;
 int MAX_AUDIOPLAYER = 11;
 int player_count = 0;
 
-Wall[] aWall;
-int MAX_WALL = 10;
-int currentWallIndex = 0;
-
 Ball[] aBall;
 int MAX_BALL = 300;
 int MAX_BALL_AGE = 150;
 float MAX_BALL_SIZE = 30;
-
-
-
-
-PVector reflection(PVector p1, PVector pi, PVector norm) {
-  float rx, ry;
-  float lenOrg = p1.mag();
-  float dot = (pi.x-p1.x)*norm.x + (pi.y-p1.y)*norm.y;
-  rx = (pi.x-p1.x) - 2*norm.x*dot;
-  ry = (pi.y-p1.y) - 2*norm.y*dot;
-  PVector PNew = new PVector(rx, ry, 0);
-  float lenNew = PNew.mag();
-  PNew.mult(lenOrg/lenNew);
-  return PNew;
-}
-
-PVector intersection(PVector p1, PVector p2, PVector p3, PVector p4)
-{
-  if (max(p1.x, p2.x) < min(p3.x, p4.x)  ||
-      min(p1.x, p2.x) > max(p3.x, p4.x)  ||
-      max(p1.y, p2.y) < min(p3.y, p4.y)  ||
-      min(p1.y, p2.y) > max(p3.y, p4.y)) {
-    return null;
-  }
-  
-  float d = (p1.x-p2.x)*(p3.y-p4.y) - (p1.y-p2.y)*(p3.x-p4.x);
-  if ( abs(d) < 0.0000001) {
-    return null;
-  }
-  float x = ((p3.x-p4.x)*(p1.x*p2.y-p1.y*p2.x)-(p1.x-p2.x)*(p3.x*p4.y-p3.y*p4.x))/d;
-  float y = ((p3.y-p4.y)*(p1.x*p2.y-p1.y*p2.x)-(p1.y-p2.y)*(p3.x*p4.y-p3.y*p4.x))/d;
-  // check if intersection is on line
-  if (min(p1.x,p2.x) > x ||
-      max(p1.x,p2.x) < x ||
-      min(p3.x,p4.x) > x ||
-      max(p3.x,p4.x) < x ||
-      min(p1.y,p2.y) > y ||
-      max(p1.y,p2.y) < y ||
-      min(p3.y,p4.y) > y ||
-      max(p3.y,p4.y) < y)  {
-        return null;
-  }
-  return new PVector(x,y,0);
-}
 
 
 class Ball {
@@ -89,6 +41,7 @@ class Ball {
   boolean update() {
     pos.add(vel);
     
+    // reflect at the edges 
     if (pos.x < size) {
       vel.x = -vel.x;
       pos.x = size;
@@ -114,71 +67,15 @@ class Ball {
     age--;
     return age > 0;
   }
-  
-  PVector collide(Wall wall) {
-    PVector posNew = new PVector(pos.x + vel.x, pos.y + vel.y); 
-    PVector collision = intersection(pos,posNew,wall.p1,wall.p2);
-    return collision;
-  }
-  
-  boolean reflect(Wall wall) {
-    PVector posNew = new PVector(pos.x + vel.x, pos.y + vel.y); 
-    PVector collision = intersection(pos, posNew, wall.p1, wall.p2);
-    if (collision != null) {
-      PVector norm = wall.getNorm();
-      vel = reflection(vel, collision, norm);
-      return true;
-    }
-    else {
-      return false;
-    }
-  }  
+
   void draw() {
     fill(BallColor);
     stroke(255);
     strokeWeight(1);
-//    noStroke();
     ellipse(pos.x, pos.y, size, size);
   }
   
 }
-
-
-class Wall { 
-  PVector p1, p2;
-  int weight; 
-  color WallColor;
-  
-  Wall(float x1, float y1, float x2, float y2) {  
-    p1 = new PVector(x1,y1,0);
-    p2 = new PVector(x2,y2,0);
-    weight = 0;
-    WallColor = color(0, 200, 0);
-  } 
-
-  void setP2(float x2, float y2) {  
-    p2 = new PVector(x2,y2,0);
-  } 
-  
-  PVector getNorm() {
-    PVector v = new PVector(p2.x-p1.x, p2.y-p1.y, 0);
-//    v.normalize();
-    PVector norm = new PVector(-v.y, v.x);
-    return norm;
-  }
-  
-  void setStrokeWeight(int w) {
-    weight = w;
-  }
-  void draw()
-  {
-    stroke(WallColor);
-    strokeWeight(weight); 
-    line(p1.x, p1.y, p2.x, p2.y); 
-  } 
-} 
-
-
 
 
 
@@ -197,13 +94,6 @@ void setup()
   for (int i=0; i<MAX_BALL; i++) {
     aBall[i] = new Ball(i, i);
   }
-  rect(40,50,100,200);
-  
-  aWall = new Wall[MAX_WALL];
-  for (int i=0; i<MAX_WALL; i++) {
-    aWall[i] = new Wall(0, 0, 0, 0);
-  }
-
 }
 
 void  draw()
@@ -215,14 +105,11 @@ void  draw()
   for (int i=0; i<MAX_BALL; i++) {
     if (aBall[i].update() == false) {
       idxBall = i;
-
       aBall[i] = new Ball(mouseX, mouseY);
-    }
-    for (int w=0; w<MAX_WALL; w++) {
-      aBall[i].reflect(aWall[w]);
     }
   }
 
+  // do not sound on each ball
   if (idxBall >= 0) {
     player_count++;
     if (player_count == 5) {
@@ -234,10 +121,6 @@ void  draw()
   }
 
  
-  for (int i=0; i<MAX_WALL; i++) {
-    aWall[i].draw();
-  }
-  
   for (int i=0; i<MAX_BALL; i++) {
     aBall[i].draw();
   }

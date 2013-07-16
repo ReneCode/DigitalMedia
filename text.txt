@@ -1,1 +1,3 @@
-hallo
+Das ist jetzt der neue Inhalt von text.txt
+
+ende/

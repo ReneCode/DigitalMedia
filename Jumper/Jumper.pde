@@ -1,14 +1,14 @@
 Maxim maxim;
 AudioPlayer[] player;
-int MAX_AUDIOPLAYER = 1;
+int MAX_AUDIOPLAYER = 2;
 
 Step[] aStep;
 int STEP_SIZE = 80;
-int MAX_STEP = 20;
+int MAX_STEP = 10;
 
 Ball ball;
 int BALL_SIZE = 30;
-float BALL_UP_VEL = -8;
+float BALL_UP_VEL = -10;
 float xGravity = 0;
 int BALL_UPDATE_OK = 0;
 int BALL_UPDATE_OUT = 1;
@@ -27,7 +27,7 @@ class Ball {
     pos = new PVector(x, y, 0);
     vel = new PVector(0, 0);
     gravity = new PVector(0,0.2);
-    BallColor = color(250,250,100);
+    BallColor = color(255,50,50);
     hSize = BALL_SIZE/2;
     frameHeight = height;
   }
@@ -56,15 +56,33 @@ class Ball {
   }
   
   void draw() {
+    float b4 = BALL_SIZE/3.5;
+    // body
     fill(BallColor);
     noStroke();
     rect(pos.x-hSize, pos.y-hSize, BALL_SIZE, BALL_SIZE);
-    fill(0,0,0);
+    
+    // legs
+    stroke(255, 100, 0);
+    strokeWeight(3);
+    line(pos.x-5, pos.y+BALL_SIZE/2, pos.x-b4, pos.y+BALL_SIZE/2+7);
+    line(pos.x+5, pos.y+BALL_SIZE/2, pos.x+b4, pos.y+BALL_SIZE/2+7);
+
+    // nose    
+    stroke(255, 255, 0);
+    strokeWeight(5); 
+    line(pos.x,pos.y, pos.x, pos.y+10);
+    
+    // eyes
     noStroke();
-    float b4 = BALL_SIZE/3.5;
-    float d = map(vel.y, -BALL_UP_VEL, BALL_UP_VEL, -b4, b4);
-    ellipse(pos.x-b4, pos.y+d, BALL_SIZE/1.8, BALL_SIZE/1.6);
-    ellipse(pos.x+b4, pos.y+d, BALL_SIZE/1.8, BALL_SIZE/1.6);
+    fill(255,255,255);
+    float d = map(vel.y, -BALL_UP_VEL, BALL_UP_VEL, +10, 2);    
+    ellipse(pos.x-b4, pos.y-d, BALL_SIZE/1.8, BALL_SIZE/1.6);
+    ellipse(pos.x+b4, pos.y-d, BALL_SIZE/1.8, BALL_SIZE/1.6);
+    fill(0,0,0);
+    ellipse(pos.x-b4, pos.y-d, BALL_SIZE/4, BALL_SIZE/4);
+    ellipse(pos.x+b4, pos.y-d, BALL_SIZE/4, BALL_SIZE/4);
+
   }
 
   void bounceBack() {
@@ -100,7 +118,7 @@ class Step {
     weight = 5;
   } 
   boolean visible() {
-    return pos.y < 0;
+    return pos.y < height;
   } 
 
   float left() {
@@ -142,7 +160,7 @@ void setup()
   aStep = new Step[MAX_STEP];
   for (int i=0; i<MAX_STEP; i++) {
     aStep[i] = new Step(random(0+STEP_SIZE, width-STEP_SIZE), 
-                  random(10,3*height));
+                  random(10, 1*height)-0*height);
   }
 
 }
@@ -153,33 +171,53 @@ void draw()
   
   ball.update();
   ball.addXGravity(xGravity);
-  ball.draw();
   
-  //
+  //scrolling of the steps down
   float yMid = height/2;
   if (ball.pos.y < yMid) {
+    float d = yMid - ball.pos.y;
+    // correct the ball position - on the half y
+    ball.pos.y = yMid;
     for (int i=0; i<MAX_STEP; i++) {
-      aStep[i].pos.y += 2;
+      // scroll down the steps
+      aStep[i].pos.y += d;
     }
   }
 
   for (int i=0; i<MAX_STEP; i++) {
     if (!aStep[i].visible()) {
-      
+      aStep[i].pos.y = -10;
+      aStep[i].pos.x = random(0, width);
+      aStep[i].StepColor = color( random(50,255),
+                                  random(50,255),
+                                  random(50,255) ); 
     }
   } 
   
   boolean bBounce = false;
+  boolean bSound = false;
   for (int i=0; i<MAX_STEP; i++) {
     if (ball.reflect( aStep[i] )) {
       bBounce = true;
+      if ( red(aStep[i].StepColor) > 200 ) {
+         bSound = true;
+      } 
     }
     aStep[i].draw();
   }
+  ball.draw();
+
   if (bBounce) {
-      player[0].cue(0);
-      player[0].play();
+      if (!bSound) {
+        player[0].cue(0);
+        player[0].play();
+      }
       ball.bounceBack();
+  }
+
+  if (bSound) {
+      player[1].cue(0);
+      player[1].play();
   }
 
 }

@@ -1,3 +1,5 @@
-Das ist jetzt der neue Inhalt von text.txt
+Hier sind die Assignments von dem Kurs:
 
-ende/
+Coursera / DigitalMediaCreative Programming for Digital Media & Mobile Apps
+
+

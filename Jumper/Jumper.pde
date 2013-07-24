@@ -1,15 +1,20 @@
 Maxim maxim;
 AudioPlayer[] player;
-int MAX_AUDIOPLAYER = 3;
+int MAX_AUDIOPLAYER = 5;
+int SOUND_END = MAX_AUDIOPLAYER-1;
+
+
+boolean bPlaying = false;
 
 Step[] aStep;
 int STEP_SIZE = 80;
-int MAX_STEP = 10;
+int MAX_STEP = 15;
 int STEP_TYPE_HIDDEN = -1;
 int STEP_TYPE_NORMAL = 0;
 int STEP_TYPE_JUMPER = 1;
-int STEP_TYPE_ONCE = 2;
-int STEP_TYPE_MAX = 3;
+int STEP_TYPE_BREAK = 2;
+int STEP_TYPE_EXTRAJUMPER = 3;
+int STEP_TYPE_MAX = 4;
 
 
 Ball ball;
@@ -92,10 +97,13 @@ class Ball {
   }
 
   void bounceBack(Step step) {
+    // calculate the up-velocity depending on the step
     float newVel = vel.y;
     if (step.type == STEP_TYPE_NORMAL) 
       vel.y = BALL_BOUNCE_BACK_VEL;
     else if (step.type == STEP_TYPE_JUMPER) 
+      vel.y = 1.2 * BALL_BOUNCE_BACK_VEL;
+    else if (step.type == STEP_TYPE_EXTRAJUMPER)
       vel.y = 2 * BALL_BOUNCE_BACK_VEL;
   }
 
@@ -112,6 +120,11 @@ class Ball {
       return true;
     }
     return false;
+  }
+  
+  // is the ball still visible / or out of the picture
+  boolean visible() {
+    return pos.y < height;
   }
 }
 
@@ -144,27 +157,30 @@ class Step {
 
   color getColor()
   {
+    // different color depending on the type
     color col = color(200, 200, 200);
     if (type == STEP_TYPE_NORMAL)
       col = color(0, 200, 0);
     else if (type == STEP_TYPE_JUMPER)
       col = color(200, 0, 0);
-    else if (type == STEP_TYPE_ONCE)
+    else if (type == STEP_TYPE_BREAK)
       col = color(150, 150, 150);
+    else if (type == STEP_TYPE_EXTRAJUMPER)
+      col = color(200, 200, 0);
     return col;
   }
 
   void playSound()
   {
-    println("pay Sound:"+ type);
     player[type].cue(0);
     player[type].play();
   }
   
   boolean doAction()
   {
+    // do what is todo if ball hits that step
     playSound();
-    if (type == STEP_TYPE_ONCE)
+    if (type == STEP_TYPE_BREAK)
       return false;
     else
       return true;
@@ -178,6 +194,48 @@ class Step {
   }
 } 
 
+// calculate a new step-position
+// randomized but not directly on a other step
+PVector getStepNewPos(boolean bScroll)
+{
+  float minY = height;
+  float maxY = 0;
+  for (int i=0; i<MAX_STEP; i++) {
+    if (aStep[i] != null  &&  aStep[i].type != STEP_TYPE_BREAK) {
+      if (aStep[i].pos.y < minY)
+        minY = aStep[i].pos.y;
+      if (aStep[i].pos.y > maxY)
+        maxY = aStep[i].pos.y;
+    }
+  }
+  PVector pos = new PVector(random(0+STEP_SIZE, width-STEP_SIZE), 0);
+  if (bScroll) {
+    if (minY < 0)
+      pos.y = minY -10;
+    else
+      pos.y = -10;
+  }
+  else {
+    pos.y = minY - random(10, height/5) - score/100 ;
+  }
+  return pos;
+}
+
+
+// create new steps and place the ball/bird
+void initBoard() {
+  ball = new Ball(300, 300);
+  aStep = new Step[MAX_STEP];
+  float y = 0;
+  // first step down on the ground
+  aStep[0] = new Step(random(0+STEP_SIZE, width-STEP_SIZE), height-10);  
+  ball.pos.x = aStep[0].pos.x;
+  ball.pos.y = aStep[0].pos.y - 20;
+  for (int i=1; i<MAX_STEP; i++) {
+    PVector pos = getStepNewPos(false);
+    aStep[i] = new Step(pos.x, pos.y); 
+  }
+}
 
 
 
@@ -185,32 +243,41 @@ class Step {
 void setup()
 {
   // default size
-  size(400, 600);
-
+  size(500, 600);
+  // load the sounds
   maxim = new Maxim(this);
   player = new AudioPlayer[MAX_AUDIOPLAYER];
   for (int i=0; i<MAX_AUDIOPLAYER; i++) {
     player[i] = maxim.loadFile("boink" + i + ".wav");
     player[i].setLooping(false);
   }
-
-
-  ball = new Ball(300, 300);
-  aStep = new Step[MAX_STEP];
-  for (int i=0; i<MAX_STEP; i++) {
-    aStep[i] = new Step(random(0+STEP_SIZE, width-STEP_SIZE), 
-    random(10, 1*height)-0*height);
-  }
+  initBoard();
 }
+
+
 
 void draw()
 {
   background(0);
-
-  textSize(12);
-  fill(100, 100, 100);
+  // show score
+  textAlign(LEFT, CENTER);
+  textSize(22);
+  fill(200, 200, 100);
   text(score, 30, 30);
-
+  // show instructions
+  if (!bPlaying) {
+    textAlign(CENTER, CENTER);
+    text("hit any key to start", width/2, height/2);
+    text("use LEFT and RIGHT cursor", width/2, height/2 - 50);
+    return;
+  }
+  // end game ?
+  if (!ball.visible()) {
+    bPlaying = false;
+    player[SOUND_END].cue(0);
+    player[SOUND_END].play();
+  }
+  // the ball falls down
   ball.update();
   ball.addXGravity(xGravity);
 
@@ -218,6 +285,7 @@ void draw()
   float yMid = height/2;
   if (ball.pos.y < yMid) {
     float d = yMid - ball.pos.y;
+    // jump up -> increase the score
     score += d;
     // correct the ball position - on the half y
     ball.pos.y = yMid;
@@ -227,21 +295,22 @@ void draw()
         aStep[i].pos.y += d;
     }
   }
-
+  // create new step (new pos), if a step was scrolled out of the screen
   for (int i=0; i<MAX_STEP; i++)  {
     if (aStep[i] != null  &&  !aStep[i].visible()) {
-      aStep[i].pos.y = -10;
-      aStep[i].pos.x = random(0, width);
+      aStep[i].pos = getStepNewPos(true);
       aStep[i].type = (int)random(STEP_TYPE_NORMAL, STEP_TYPE_MAX);
     }
   } 
 
+  // calculate, if the ball hits any step
   for (int i=0; i<MAX_STEP; i++) {
     if (aStep[i] != null)  {   
       aStep[i].draw();
       if (ball.reflect( aStep[i] )) {
         ball.bounceBack(aStep[i]);
         if (! aStep[i].doAction())
+          // a break-step - it's now absend
           aStep[i] = null;
       }
     }
@@ -251,6 +320,13 @@ void draw()
 
 void keyPressed()
 {
+  if (!bPlaying) {
+    // restart the game
+    score = 0;
+    initBoard();
+    bPlaying = true;
+  }
+  
   if (keyCode == RIGHT) {
     xGravity = 2;
   }

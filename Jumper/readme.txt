@@ -22,3 +22,6 @@ the control-logic of the game is done in the main draw-methode.
 
 .
 
+versuch
+im branch versuch eingebaut
+
